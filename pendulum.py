@@ -6,6 +6,10 @@ import math
 
 GUI = True
 
+print("****************** \n1 - Интерполяция полиномом третьего порядка \n2 - Интерполяция полиномом пятого порядка \n" +
+        "3 - Трапецевидный профиль скорости \n******************")
+option = int(input())
+
 if (GUI):
     physicsClient = p.connect(p.GUI)
     p.resetDebugVisualizerCamera(
@@ -24,7 +28,6 @@ else:
     physicsClient = p.connect(p.DIRECT)
 
 
-
 g = 9.8
 m = 1
 L = 0.5
@@ -36,7 +39,7 @@ bodyId = p.loadURDF("./pendulum.urdf")
 q0 = -0.8 # starting position
 dt = 1/240 # pybullet simulation step
 t = 0
-T = 1
+T = 2
 maxTime = T + T / 4
 
 logTime = np.arange(0.0, maxTime, dt)
@@ -140,13 +143,18 @@ def feedback_lin(pos, vel, posd, veld, accd):
     ctrl = m*L*L*((g/L)*math.sin(pos)+kf/(m*L*L)*vel + u)
     return ctrl
 
+
 prev_vel = 0
 prev_acc = 0
 prev_accd = 0
 for t in logTime[1:]:
-    #(s, posd, veld, accd) = fifth_order_poly_profile(q0, qd, T, t)
-    (posd, veld, accd) = cubic_interpol(q0, qd, T, t)
-    #(s, posd, veld, accd) = trapezoidal_profile(q0, qd, T, t)
+    if option == 1:
+        (posd, veld, accd) = cubic_interpol(q0, qd, T, t)
+    if option == 2:
+        (s, posd, veld, accd) = fifth_order_poly_profile(q0, qd, T, t)
+    if option == 3:
+        (s, posd, veld, accd) = trapezoidal_profile(q0, qd, T, t)
+
     ctrl = feedback_lin(pos, vel, posd, veld, accd)
     logRef[idx] = posd
     logRefd[idx] = veld
@@ -182,9 +190,14 @@ plt.subplot(4,1,1)
 plt.grid(True)
 plt.plot(logTime, logPos, label = "simPos")
 plt.plot(logTime, logRef, label = "simRef")
-#plt.title("Trapezoidal motion profile")
-plt.title("Third-order polynomial time scaling")
-#plt.title("Fifth-order polynomial time scaling")
+
+if option == 1:
+    plt.title("Third-order polynomial time scaling")
+if option == 2:
+    plt.title("Fifth-order polynomial time scaling")
+if option == 3:
+    plt.title("Trapezoidal motion profile")
+
 plt.legend()
 
 plt.subplot(4,1,2)
